@@ -1,0 +1,26 @@
+{
+  "name": "jsio-codemods",
+  "version": "1.0.0",
+  "description": "",
+  "main": "",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/juliankrispel/jsio-codemods.git"
+  },
+  "devkit": {
+    "clientPaths": {
+      "*": "src/"
+    }
+  },
+  "devDependencies": {
+    "babel-preset-es2015": "^6.13.2",
+    "babel-jest": "^14.1.0",
+    "jest-cli": "^14.1.0",
+    "jscodeshift": "^0.3.27"
+  }
+}

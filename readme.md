@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/juliankrispel/jsio-codemods.svg?branch=master)](https://travis-ci.org/juliankrispel/jsio-codemods)
+
 A bunch of codemods to turn code reliant on the jsio compiler into es6 modules. (Work in Progress)
 
 ## Usage

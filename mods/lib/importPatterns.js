@@ -6,7 +6,7 @@ const named = require('named-regexp').named;
 // pathCache: devkit -> devkit-core/src/clientapi
 // pathCache: squill -> squill/
 
-function capitalizeFirstLetter(string) {
+function capitalizeFirstLetter (string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
@@ -29,31 +29,34 @@ const getModulePath = (captures) => {
   return dotPath.concat(modulePath).join('/');
 }
 
-const getModuleName = (captures) => (
-  captures.module[0].split('.')
+const getModuleName = (captures) => {
+  if (captures.binding && captures.binding.length > 0) {
+    return captures.binding[0];
+  }
+  return captures.module[0].split('.')
   .map((fragment, index) => {
     if (index > 0) {
       return capitalizeFirstLetter(fragment);
     }
     return fragment;
-  }).join('')
+  }).join('');
+};
+
+const transformModuleString = (j, item, match) => (
+  j.importDeclaration(
+    [j.importDefaultSpecifier(j.identifier(getModuleName(match.captures)))],
+    j.literal(getModulePath(match.captures))
+  )
 );
 
 const importPatterns = {
   single: {
     re: named(new RegExp('^import ' + modulePathRegex + '$', 'm')),
-    transform: (j, item, match) => (
-      // if there is more than one dot, put the 
-      //console.log('captures - ', match.captures);
-      j.importDeclaration(
-        [j.importDefaultSpecifier(j.identifier(getModuleName(match.captures)))],
-        j.literal(getModulePath(match.captures))
-      )
-    )
+    transform: transformModuleString
   },
   binding: {
     re: named(new RegExp('^import ' + modulePathRegex + ' as ' + impName('binding') + '$', 'm')),
-    transform: (j, item, match) => {}
+    transform: transformModuleString
   },
   from: {
     re: named(new RegExp('^from ' + modulePathRegex + ' import ' + impName('selection') + '$', 'm')),

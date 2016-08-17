@@ -37,6 +37,10 @@ const transformImport = (j, item) => {
     throw new Error(`Wildcard imports are not allowed, please refactor this file before continuing.`);
   }
 
+  if (importString.indexOf('as exports') > -1) {
+    throw new Error(`The syntax 'import <your-module> as export' is not allowed, please refactor this file before continuing.`);
+  }
+
   let match;
   let importPattern;
   _.forEach(importPatterns, (pattern, reName) => {

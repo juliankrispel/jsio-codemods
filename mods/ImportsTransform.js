@@ -13,7 +13,6 @@ var replaceFn = function (raw, p1, p2, p3) {
 
 const transformImport = (j, item) => {
   console.log('\n');
-  // console.log('item=', item);
 
   if (
     !item.parent ||

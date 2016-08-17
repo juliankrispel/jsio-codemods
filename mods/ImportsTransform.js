@@ -1,6 +1,6 @@
 'use strict';
-const named = require('named-regexp').named;
 const _ = require('lodash');
+const importPatterns = require('./lib/importPatterns');
 
 // Stolen from: https://github.com/gameclosure/js.io/blob/bf8cdfa2c19fd610b179ce47ca7101f36988c7e9/packages/preprocessors/import.js //
 var importExpr = /^(\s*)(import\s+[^=+*"'\r\n;\/]+|from\s+[^=+"'\r\n;\/ ]+\s+import\s+[^=+"'\r\n;\/]+)(;|\/|$)/gm;
@@ -10,53 +10,6 @@ var replaceFn = function (raw, p1, p2, p3) {
   }
   return raw;
 }
-// ---- //
-
-
-// const jsio = require('jsio');
-// Prime jsio with some common paths
-// jsio.addPath('./timestep/src');
-// path: jsio/packages . lib timestep/src
-// pathCache: devkit -> devkit-core/src/clientapi
-// pathCache: squill -> squill/
-
-
-const impName = name => '(:<' + name + '>[a-zA-Z\\.\\$]+?)';
-const importPatterns = {
-  single: {
-    re: named(new RegExp('^import ' + impName('module') + '$', 'gm')),
-    transform: (j, item, match) => {
-      const moduleName = match.captures.module[0];
-      return j.importDeclaration(
-        [j.importDefaultSpecifier(j.identifier(moduleName))],
-        j.literal(moduleName)
-      )
-    }
-  },
-  binding: {
-    re: named(new RegExp('^import ' + impName('module') + ' as ' + impName('binding') + '$', 'gm')),
-    transform: (j, item, match) => {}
-  },
-  from: {
-    re: named(new RegExp('^from ' + impName('module') + ' import ' + impName('selection') + '$', 'gm')),
-    transform: (j, item, match) => {
-      const modulePath = match.captures.module[0];
-      const selection = match.captures.selection[0];
-
-      const importDec = j.importDeclaration(
-        [j.importSpecifier(j.identifier(selection), j.identifier(selection))],
-        j.literal(modulePath)
-      );
-
-      return j(item).replaceWith(importDec);
-    }
-  },
-  bindingFrom: {
-    re: named(new RegExp('^from ' + impName('module') + ' import ' + impName('selection') + ' as ' + impName('binding') + '$', 'gm')),
-    transform: (j, item, match) => {}
-  }
-};
-
 
 const transformImport = (j, item) => {
   console.log('\n');

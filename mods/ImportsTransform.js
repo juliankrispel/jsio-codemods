@@ -1,64 +1,118 @@
 'use strict';
-function capitalizeFirstLetter(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1);
+const named = require('named-regexp').named;
+const _ = require('lodash');
+
+// Stolen from: https://github.com/gameclosure/js.io/blob/bf8cdfa2c19fd610b179ce47ca7101f36988c7e9/packages/preprocessors/import.js //
+var importExpr = /^(\s*)(import\s+[^=+*"'\r\n;\/]+|from\s+[^=+"'\r\n;\/ ]+\s+import\s+[^=+"'\r\n;\/]+)(;|\/|$)/gm;
+var replaceFn = function (raw, p1, p2, p3) {
+  if (!/\/\//.test(p1)) {
+    return p1 + 'jsio(\'' + p2 + '\')' + p3;
+  }
+  return raw;
 }
+// ---- //
 
-module.exports = function(file, api, options) {
-  const importModules = [];
 
-  let source = file.source.split('\n').map((line, index) => {
-    const match = line.match(/^\s*import/gi);
-    if(match && match.length > 0) {
-      const hasAs = line.indexOf(' as ') > -1;
-      const fragments = line.replace(';', '').split(' ');
-      // turn dots into paths
-      let pathFragment = fragments[1];
-      const pathFragments = fragments[1].split('.').filter(fragment => fragment.length > 0);
-      const backwardsPathMatch = pathFragment.match(/^\.+/);
-      const originalModuleName = pathFragments.join('.');
+// const jsio = require('jsio');
+// Prime jsio with some common paths
+// jsio.addPath('./timestep/src');
+// path: jsio/packages . lib timestep/src
+// pathCache: devkit -> devkit-core/src/clientapi
+// pathCache: squill -> squill/
 
-      // construct module name
-      let moduleName = pathFragments.map((fragment, index) => {
-        if (index > 0) {
-          return capitalizeFirstLetter(fragment);
-        }
-        return fragment;
-      }).join('');
 
-      // construct module path
-      if (backwardsPathMatch !== null) {
-        const dotLength = backwardsPathMatch[0].length;
-        if (dotLength === 1) {
-          pathFragments.unshift('.');
-        } else if (dotLength > 1) {
-          let backwardsCount = dotLength -1;
-          while (backwardsCount >= 1) {
-            pathFragments.unshift('..');
-            backwardsCount--;
-          }
-        }
-      }
-
-      const path = pathFragments.join('/');
-
-      if(hasAs) {
-        moduleName = fragments[3];
-      } else {
-        importModules.push({
-          original: originalModuleName,
-          replacement: moduleName,
-        });
-      }
-
-      return `import ${moduleName} from '${path}';`;
+const impName = name => '(:<' + name + '>[a-zA-Z\\.\\$]+?)';
+const importPatterns = {
+  single: {
+    re: named(new RegExp('^import ' + impName('module') + '$', 'gm')),
+    transform: (j, item, match) => {
+      const moduleName = match.captures.module[0];
+      return j.importDeclaration(
+        [j.importDefaultSpecifier(j.identifier(moduleName))],
+        j.literal(moduleName)
+      )
     }
+  },
+  binding: {
+    re: named(new RegExp('^import ' + impName('module') + ' as ' + impName('binding') + '$', 'gm')),
+    transform: (j, item, match) => {}
+  },
+  from: {
+    re: named(new RegExp('^from ' + impName('module') + ' import ' + impName('selection') + '$', 'gm')),
+    transform: (j, item, match) => {
+      const modulePath = match.captures.module[0];
+      const selection = match.captures.selection[0];
 
-    return line;
-  }).join('\n');
+      const importDec = j.importDeclaration(
+        [j.importSpecifier(j.identifier(selection), j.identifier(selection))],
+        j.literal(modulePath)
+      );
 
-  importModules.forEach(module => {
-    source = source.replace(module.original, module.replacement);
+      return j(item).replaceWith(importDec);
+    }
+  },
+  bindingFrom: {
+    re: named(new RegExp('^from ' + impName('module') + ' import ' + impName('selection') + ' as ' + impName('binding') + '$', 'gm')),
+    transform: (j, item, match) => {}
+  }
+};
+
+
+const transformImport = (j, item) => {
+  console.log('\n');
+  // console.log('item=', item);
+
+  if (
+    !item.parent ||
+    !item.parent.parent ||
+    item.parent.parent.name !== 'program'
+  ) {
+    throw new Error('Imports must be top level', item.parent.parent.type);
+  }
+
+  if (item.value.arguments.length !== 1) {
+    throw new Error('Arguments length is not 1', item.value.arguments.length);
+  }
+
+  const argumentNode = item.value.arguments[0];
+  if (argumentNode.type !== 'Literal') {
+    throw new Error('Argument type not Literal', argumentNode.type);
+  }
+
+  const importString = argumentNode.value;
+  console.log('importString=', importString);
+
+  let match;
+  let importPattern;
+  _.forEach(importPatterns, (pattern, reName) => {
+    const newMatch = pattern.re.exec(importString);
+    if (newMatch) {
+      if (match) {
+        throw new Error('Ambiguous import match');
+      }
+      match = newMatch;
+      importPattern = pattern;
+    }
   });
 
-  return source;
+  if (!match) {
+    throw new Error('Could not match import signature');
+  }
+
+  console.log('match=', match);
+  return importPattern.transform(j, item, match);
+};
+
+
+const toSourceOpts = { quote: 'single' };
+
+module.exports = function(fileInfo, api, options) {
+  const j = api.jscodeshift;
+  // Transform source so that the AST can be built
+  fileInfo.source = fileInfo.source.replace(importExpr, replaceFn);
+  const shifted = j(fileInfo.source);
+
+  shifted.find(j.CallExpression, { callee: { name: 'jsio' } })
+    .forEach(item => j(item).replaceWith(transformImport(j, item)));
+  return shifted.toSource(toSourceOpts).replace(/;;+/gi, ';');
 };

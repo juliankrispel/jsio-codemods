@@ -14,8 +14,8 @@ const impName = name => '(:<' + name + '>[a-zA-Z\\.\\$]+?)';
 const modulePathRegex = '(:<dotPath>[.]+)?' + impName('module');
 
 const getModulePath = (captures) => {
-  var modulePath = captures.module[0].split('.');
-  var dotPath = captures.dotPath[0].split('');
+  const modulePath = (captures.module[0] || '').split('.');
+  var dotPath = (captures.dotPath[0] || '').split('');
 
   // if there are more than two dots the first two will count as one
   // dot-path, the other dots will count as one dot-path each,

@@ -32,7 +32,10 @@ const transformImport = (j, item) => {
   }
 
   const importString = argumentNode.value;
-  console.log('importString=', importString);
+
+  if (importString.indexOf('*') > -1) {
+    throw new Error(`Wildcard imports are not allowed, please refactor this file before continuing.`);
+  }
 
   let match;
   let importPattern;
@@ -51,7 +54,6 @@ const transformImport = (j, item) => {
     throw new Error('Could not match import signature');
   }
 
-  console.log('match=', match);
   return importPattern.transform(j, item, match);
 };
 
@@ -63,6 +65,7 @@ module.exports = function(fileInfo, api, options) {
   // Transform source so that the AST can be built
   fileInfo.source = fileInfo.source.replace(importExpr, replaceFn);
   const shifted = j(fileInfo.source);
+  console.log('\ntransforming file - ', fileInfo.path);
 
   shifted.find(j.CallExpression, { callee: { name: 'jsio' } })
     .forEach(item => j(item).replaceWith(transformImport(j, item)));

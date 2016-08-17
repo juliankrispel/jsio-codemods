@@ -1,1 +1,1 @@
-import { $ } from 'util/browser';
+import {$} from 'util/browser';

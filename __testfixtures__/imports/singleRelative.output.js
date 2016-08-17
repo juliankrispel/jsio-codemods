@@ -1,3 +1,3 @@
 import View from './View';
-import uiKeyboardTypes from '../../ui/keyboardTypes';
-import uiSomethingBoing from '../../../ui/Something/boing';
+import keyboardTypes from '../../ui/keyboardTypes';
+import boing from '../../../ui/Something/boing';

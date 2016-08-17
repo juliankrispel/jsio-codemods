@@ -12,8 +12,6 @@ var replaceFn = function (raw, p1, p2, p3) {
 }
 
 const transformImport = (j, item) => {
-  console.log('\n');
-
   if (
     !item.parent ||
     !item.parent.parent ||
@@ -34,11 +32,11 @@ const transformImport = (j, item) => {
   const importString = argumentNode.value;
 
   if (importString.indexOf('*') > -1) {
-    throw new Error(`Wildcard imports are not allowed, please refactor this file before continuing.`);
+    throw new Error('Wildcard imports are not allowed, please refactor this file before continuing.');
   }
 
   if (importString.indexOf('as exports') > -1) {
-    throw new Error(`The syntax 'import <your-module> as export' is not allowed, please refactor this file before continuing.`);
+    throw new Error("The syntax 'import <your-module> as export' is not allowed, please refactor this file before continuing.");
   }
 
   let match;
@@ -64,7 +62,7 @@ const transformImport = (j, item) => {
 
 const toSourceOpts = { quote: 'single' };
 
-module.exports = function(fileInfo, api, options) {
+module.exports = (fileInfo, api, options) => {
   const j = api.jscodeshift;
   // Transform source so that the AST can be built
   fileInfo.source = fileInfo.source.replace(importExpr, replaceFn);
@@ -72,6 +70,6 @@ module.exports = function(fileInfo, api, options) {
   console.log('\ntransforming file - ', fileInfo.path);
 
   shifted.find(j.CallExpression, { callee: { name: 'jsio' } })
-    .forEach(item => j(item).replaceWith(transformImport(j, item)));
+    .forEach(item => transformImport(j, item));
   return shifted.toSource(toSourceOpts).replace(/;;+/gi, ';');
 };

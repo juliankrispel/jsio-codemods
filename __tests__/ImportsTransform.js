@@ -1,12 +1,14 @@
 'use strict';
 jest.autoMockOff();
+
 const fs = require('fs');
 const testUtils = require('jscodeshift/dist/testUtils');
 const _defineTest = testUtils.defineTest;
-const runTest = testUtils.runTest;
 const importsTransform = require('../mods/ImportsTransform');
 
-const defineTest = fixture => _defineTest(__dirname, 'mods/ImportsTransform', null, fixture);
+const defineTest = fixture => (
+  _defineTest(__dirname, 'mods/ImportsTransform', null, fixture)
+)
 
 const defineTestWhichThrows = fixture => {
   it('throws an error', () => {
@@ -44,7 +46,6 @@ describe('Imports Transform', () => {
   });
 
   defineTest('imports/binding');
-// defineTest('imports/member');
-// 
-// defineTest('imports/multipleInline');
+  defineTest('imports/member');
+  defineTest('imports/multipleInline');
 });

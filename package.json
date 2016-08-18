@@ -4,7 +4,7 @@
   "description": "",
   "main": "",
   "scripts": {
-    "lint": "eslint mods/**/*.js",
+    "lint": "eslint mods __tests__",
     "test": "jest",
     "test:watch": "jest --watch"
   },

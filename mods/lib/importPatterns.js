@@ -9,7 +9,7 @@ const _ = require('lodash');
 
 const impName = name => `(:<${name}>[a-zA-Z\\.\\$]+?)`;
 const modulePathRegex = `(:<dotPath>[.]+)?${impName('module')}`;
-const multipleModulesRegex = '(:<modules>[a-zA-Z\\.\\$]+[,]+[\s]*[a-zA-Z\\.\\$,\\s]+)';
+const multipleModulesRegex = '(:<modules>[a-zA-Z\\.\\$]+[,]+[s]*[a-zA-Z\\.\\$,\\s]+)';
 const singleModulesRegex = named(new RegExp(`^${modulePathRegex}$`, 'm'));
 
 const getModulePath = (_module, _dotPath) => {
@@ -57,7 +57,7 @@ const importPatterns = {
   multiple: {
     re: named(new RegExp(`^import ${multipleModulesRegex}$`, 'm')),
     transform: (j, item, match) => {
-      const modules =  match.captures.modules[0].split(',').map(item => item.trim());
+      const modules = match.captures.modules[0].split(',').map(item => item.trim());
       const parentStatement = j(item).closest(j.ExpressionStatement);
       modules.reverse().forEach(mod => {
         const subMatch = singleModulesRegex.exec(mod);

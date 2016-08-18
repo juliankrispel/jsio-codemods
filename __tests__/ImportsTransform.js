@@ -1,3 +1,4 @@
+/* eslint-env jest */
 'use strict';
 jest.autoMockOff();
 
@@ -19,7 +20,6 @@ const defineTestWhichThrows = fixture => {
 }
 
 describe('Imports Transform', () => {
-
   defineTest('imports/single');
   defineTest('imports/singleRelative');
 

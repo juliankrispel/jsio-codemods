@@ -51,4 +51,5 @@ describe('Imports Transform', () => {
   defineTest('imports/binding');
   defineTest('imports/member');
   defineTest('imports/multipleInline');
+  defineTest('imports/bindingFrom');
 });

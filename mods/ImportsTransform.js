@@ -59,7 +59,6 @@ const transformImport = (j, item) => {
   return importPattern.transform(j, item, match);
 };
 
-
 const toSourceOpts = { quote: 'single' };
 
 module.exports = (fileInfo, api, options) => {

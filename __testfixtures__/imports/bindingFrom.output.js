@@ -1,1 +1,1 @@
-import { hideAddressBar as hab } from 'device';
+import {hideAddressBar as hab} from 'device';

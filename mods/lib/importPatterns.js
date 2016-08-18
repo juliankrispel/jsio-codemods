@@ -88,6 +88,18 @@ const buildImport = (j, moduleName, modulePath) => (
   )
 );
 
+const buildAliasImport = (j, moduleName, modulePath, alias) => (
+  j.importDeclaration(
+    [
+      j.importSpecifier(
+        j.identifier(moduleName),
+        j.identifier(alias)
+      )
+    ],
+    j.literal(modulePath)
+  )
+);
+
 const transformImport = (j, item, match) => {
   const module = _.get(match, 'captures.module[0]');
   const binding = _.get(match, 'captures.binding[0]');
@@ -157,7 +169,19 @@ const importPatterns = {
 
   bindingFrom: {
     re: named(new RegExp('^from ' + modulePathRegex + ' import ' + impName('selection') + ' as ' + impName('binding') + '$', 'm')),
-    transform: (j, item, match) => {}
+    transform: (j, item, match) => {
+      const module = _.get(match, 'captures.module[0]');
+      const moduleName = _.get(match, 'captures.selection[0]');
+      const alias = _.get(match, 'captures.binding[0]');
+      const dotPath = _.get(match, 'captures.dotPath[0]');
+      const modulePath = getModulePath(module, dotPath);
+
+      detectNamingCollision(j, item, moduleName);
+
+      j(item).replaceWith(
+        buildAliasImport(j, moduleName, modulePath, alias)
+      )
+    }
   }
 };
 

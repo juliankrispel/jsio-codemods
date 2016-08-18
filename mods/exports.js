@@ -9,7 +9,7 @@ const moveDefaultExport = (j, path, exportName) => {
   j(path).replaceWith(path.value.right);
 }
 
-const transformDefaultExports =  (j, ast) => {
+const transformDefaultExports = (j, ast) => {
   // find default exports
   const defaultExports = ast.find(j.AssignmentExpression, { left: { name: 'exports' } })
   if (defaultExports.nodes().length > 1) {
@@ -20,6 +20,11 @@ const transformDefaultExports =  (j, ast) => {
 
 
   const defaultExport = defaultExports.paths()[0];
+
+  // cancel transform if there is no default export
+  if (!defaultExport) {
+    return false;
+  }
 
   // if the export is part of an variable assignment
   //
@@ -53,6 +58,47 @@ const transformDefaultExports =  (j, ast) => {
   }
 }
 
+const transformNamedExports = (j, ast) => {
+  // get an assignment expression with exports on the left
+  ast
+  .find(j.AssignmentExpression, { left: { object: { name: 'exports' }}})
+  .forEach(path => {
+    // if path is part of an assignment expression
+    const parent = path.parent.value;
+    const exportName = path.value.left.property.name;
+
+    if (parent.type === 'VariableDeclarator' ||
+        parent.type === 'AssignmentExpression') {
+      const moduleReference =
+        _.get(parent, 'id.name') ||
+        _.get(parent, 'left.name');
+
+      j(path).closest(j.Statement)
+      .insertAfter(j.exportNamedDeclaration(
+        j.variableDeclaration('const', [
+          j.variableDeclarator(
+            j.identifier(exportName),
+            j.identifier(moduleReference)
+          )
+        ])
+      , []));
+
+      j(path).replaceWith(path.value.right);
+    } else {
+      j(path).closest(j.Statement).replaceWith(
+        j.exportNamedDeclaration(
+          j.variableDeclaration('const', [
+            j.variableDeclarator(
+              j.identifier(exportName),
+              path.value.right
+            )
+          ])
+        , [])
+      )
+    }
+  });
+};
+
 module.exports = (fileInfo, api, options) => {
   const j = api.jscodeshift;
 
@@ -60,6 +106,7 @@ module.exports = (fileInfo, api, options) => {
   const ast = j(fileInfo.source);
 
   transformDefaultExports(j, ast);
+  transformNamedExports(j, ast);
 
   return ast.toSource({ quote: 'single' });
 };

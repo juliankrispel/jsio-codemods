@@ -1,31 +1,10 @@
 'use strict';
 jest.autoMockOff();
+const testUtils = require('../testUtils');
+const defineTest = testUtils.defineTest;
+const defineTestWhichThrows = testUtils.defineTestWhichThrows;
 
-const fs = require('fs');
-const testUtils = require('jscodeshift/dist/testUtils');
-const _defineTest = testUtils.defineTest;
-const jscodeshift = require('jscodeshift');
 const importsTransform = require('../mods/imports');
-
-const defineTest = fixture => (
-  _defineTest(__dirname, 'mods/imports', null, fixture)
-)
-
-const defineTestWhichThrows = fixture => {
-  it('throws an error', () => {
-    const path = `__testfixtures__/${fixture}.js`
-    const source = fs.readFileSync(path, 'utf8');
-    const transform = () => importsTransform(
-      {path, source},
-      {
-        jscodeshift,
-        stats: () => {},
-      },
-      {}
-    );
-    expect(transform).toThrow();
-  });
-}
 
 describe('Imports Transform', () => {
   defineTest('imports/single');

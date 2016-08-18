@@ -1,28 +1,36 @@
-jest.dontMock('../importPatterns');
+/* eslint-env jest */
+'use strict';
+jest.disableAutomock();
+const _ = require('lodash');
+
 const importPatterns = require('../importPatterns');
 
+
+// TODO: All cases here are expected to pass.  We should add some falsy tests,
+// and also ensure that the single pattern will not match any other cases
+// (single pattern will not match multiple cases, multiple pattern will not
+// match single cases)
+const cases = {
+  single: [
+    'import .View',
+    'import ...ui.keyboardTypes',
+    'import ....ui.Something.boing'
+  ],
+  multiple: [
+    'import .Boom, .Bam'
+  ]
+};
+
+
 describe('importPatterns', () => {
-  describe('importPatterns.single', () => {
-    it('matches "import .View;"', () => {
-      const string = 'import .View;';
-      expect(string.match(importPatterns.single.re)).not.toBeFalsy();
-    });
-
-    it('matches "import ...ui.keyboardTypes;"', () => {
-      const string = 'import ...ui.keyboardTypes;';
-      expect(string.match(importPatterns.single.re)).not.toBeFalsy();
-    });
-
-    it('matches "import ....ui.Something.boing;"', () => {
-      const string = 'import ....ui.Something.boing;';
-      expect(string.match(importPatterns.single.re)).not.toBeFalsy();
-    });
-  });
-
-  describe('importPatterns.multiple', () => {
-    it('matches "import .Boom, .Bam;"', () => {
-      const string = 'import .Boom, .Bam;';
-      expect(string.match(importPatterns.multiple.re)).not.toBeFalsy();
+  _.forEach(cases, (caseStrings, caseName) => {
+    describe(`importPatterns.${caseName}`, () => {
+      const re = importPatterns[caseName].re;
+      _.forEach(caseStrings, testString => {
+        it(`matches "${testString}"`, () => {
+          expect(testString.match(re)).toBeTruthy();
+        });
+      })
     });
   });
 });

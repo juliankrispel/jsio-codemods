@@ -32,5 +32,8 @@
   },
   "eslintConfig": {
     "extends": "jsio"
+  },
+  "dependencies": {
+    "lodash": "^4.15.0"
   }
 }

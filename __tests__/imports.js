@@ -5,10 +5,10 @@ const fs = require('fs');
 const testUtils = require('jscodeshift/dist/testUtils');
 const _defineTest = testUtils.defineTest;
 const jscodeshift = require('jscodeshift');
-const importsTransform = require('../mods/ImportsTransform');
+const importsTransform = require('../mods/imports');
 
 const defineTest = fixture => (
-  _defineTest(__dirname, 'mods/ImportsTransform', null, fixture)
+  _defineTest(__dirname, 'mods/imports', null, fixture)
 )
 
 const defineTestWhichThrows = fixture => {

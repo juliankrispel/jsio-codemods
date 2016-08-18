@@ -10,6 +10,7 @@ describe('Exports Transform', () => {
   defineTest('exports/exportInVariableAssignment', 'exports');
   defineTest('exports/normal', 'exports');
   defineTest('exports/normalNamed', 'exports');
+  defineTest('exports/mixed', 'exports');
 
   describe('when there multiple default exports', () => {
     defineTestWhichThrows('exports/multipleDefaultExports');

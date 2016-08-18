@@ -84,6 +84,20 @@ const transformNamedExports = (j, ast) => {
       , []));
 
       j(path).replaceWith(path.value.right);
+    } else if (path.value.right.type === 'AssignmentExpression') {
+      const moduleReference = _.get(path, 'value.right.left.name');
+
+      j(path).closest(j.Statement)
+      .insertAfter(j.exportNamedDeclaration(
+        j.variableDeclaration('const', [
+          j.variableDeclarator(
+            j.identifier(exportName),
+            j.identifier(moduleReference)
+          )
+        ])
+      , []));
+
+      j(path).replaceWith(path.value.right);
     } else {
       j(path).closest(j.Statement).replaceWith(
         j.exportNamedDeclaration(

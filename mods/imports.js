@@ -59,7 +59,6 @@ const transformImport = (j, item) => {
   return importPattern.transform(j, item, match);
 };
 
-
 const toSourceOpts = { quote: 'single' };
 
 module.exports = (fileInfo, api, options) => {
@@ -67,7 +66,6 @@ module.exports = (fileInfo, api, options) => {
   // Transform source so that the AST can be built
   fileInfo.source = fileInfo.source.replace(importExpr, replaceFn);
   const shifted = j(fileInfo.source);
-  console.log('\ntransforming file - ', fileInfo.path);
 
   shifted.find(j.CallExpression, { callee: { name: 'jsio' } })
     .forEach(item => transformImport(j, item));

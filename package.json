@@ -5,19 +5,14 @@
   "main": "",
   "scripts": {
     "lint": "eslint mods __tests__",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "test": "jest --verbose",
+    "test:watch": "jest --watch=all --verbose"
   },
   "author": "",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "http://github.com/juliankrispel/jsio-codemods.git"
-  },
-  "devkit": {
-    "clientPaths": {
-      "*": "src/"
-    }
   },
   "devDependencies": {
     "babel-jest": "^14.1.0",

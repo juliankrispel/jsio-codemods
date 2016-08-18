@@ -1,6 +1,6 @@
-var Alpha = function() { console.log('boom'); }
+export default function Alpha () {
+  console.log('boom');
+};
 
-export default Alpha;
-
-var Beta = 'hellohello';
-export const beta = Beta;
+const Beta = 'hellohello';
+exports.default.beta = Beta;

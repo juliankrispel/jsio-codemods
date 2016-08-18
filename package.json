@@ -14,11 +14,6 @@
     "type": "git",
     "url": "http://github.com/juliankrispel/jsio-codemods.git"
   },
-  "devkit": {
-    "clientPaths": {
-      "*": "src/"
-    }
-  },
   "devDependencies": {
     "babel-jest": "^14.1.0",
     "babel-preset-es2015": "^6.13.2",

@@ -6,4 +6,6 @@ module.exports = (fileInfo, api, options) => {
   const exports = j(fileInfo.source)
   .find(j.Identifier, { name: 'exports' })
   .forEach(node => console.log(node));
+  console.log('eeeexports', exports);
+  return fileInfo.source;
 };

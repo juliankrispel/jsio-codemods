@@ -1,10 +1,12 @@
 'use strict';
 jest.autoMockOff();
 const testUtils = require('../testUtils');
-const defineTest = testUtils.defineTest;
-const defineTestWhichThrows = testUtils.defineTestWhichThrows;
+const _defineTest = testUtils.defineTest;
+const _defineTestWhichThrows = testUtils.defineTestWhichThrows;
 
 const importsTransform = require('../mods/imports');
+const defineTest = fixture => _defineTest(fixture, 'imports');
+const defineTestWhichThrows = fixture => _defineTestWhichThrows(fixture, importsTransform);
 
 describe('Imports Transform', () => {
   defineTest('imports/single');

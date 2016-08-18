@@ -5,8 +5,8 @@
   "main": "",
   "scripts": {
     "lint": "eslint mods/**/*.js",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "test": "jest --verbose",
+    "test:watch": "jest --watch=all --verbose"
   },
   "author": "",
   "license": "MIT",

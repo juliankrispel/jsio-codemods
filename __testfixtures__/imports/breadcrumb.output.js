@@ -7,5 +7,5 @@ import BackingExtension from './layout/BackingExtension';
 exports.something = BackingExtension;
 
 var uiKeyboardTypes = {};
-import ...ui.keyboardTypes;
-console.log(ui.keyboardTypes);
+import keyboardTypes from '../../ui/keyboardTypes';
+console.log(keyboardTypes);

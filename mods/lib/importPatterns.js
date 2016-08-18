@@ -9,7 +9,7 @@ const _ = require('lodash');
 
 const impName = name => `(:<${name}>[a-zA-Z\\.\\$]+?)`;
 const modulePathRegex = `(:<dotPath>[.]+)?${impName('module')}`;
-const multipleModulesRegex = '(:<modules>[a-zA-Z\\.\\$]+[,]+[\s]*[a-zA-Z\\.\\$,\\s]+)';
+const multipleModulesRegex = '(:<modules>[a-zA-Z\\.\\$]+[\\s]*[,]+[\\s]*[a-zA-Z\\.\\$,\\s]+)';
 const singleModulesRegex = named(new RegExp(`^${modulePathRegex}$`, 'm'));
 
 const getModulePath = (_module, _dotPath) => {
@@ -28,16 +28,63 @@ const getModulePath = (_module, _dotPath) => {
   return dotPath.concat(modulePath).join('/');
 }
 
+const detectNamingCollision = (j, node, name) => {
+  if (
+    j(node)
+    .closest(j.Program)
+    .find(j.Identifier, { name })
+    .filter(path => j(path).closest(j.MemberExpression).nodes().length < 1)
+    .nodes()
+    .length > 0
+  ) {
+    throw new Error(`The module with name '${name} collides with another variable in this file, please rename the file and try again`);
+  }
+}
+
+const replaceBreadCrumbVariables = (j, node, names, moduleName) => {
+  if (names.length > 1) {
+    const needle = names.reduce((prev, next, index) => {
+      if (typeof prev === 'string') {
+        return {
+          object: { name: prev },
+          property: { name: next }
+        };
+      }
+      return {
+        object: prev,
+        property: { name: next }
+      };
+    });
+
+    j(node)
+    .closest(j.Program)
+    .find(j.MemberExpression, needle)
+    .filter(path => j(path).closest(j.MemberExpression).nodes().length < 1)
+    .replaceWith(j.identifier(moduleName));
+  }
+}
+
 const getModuleName = (modulePath, binding) => (
   binding || modulePath.split('.').slice(-1)[0]
 )
 
-const buildImport = (j, module, binding, dotPath) => (
+const buildDefaultImport = (j, moduleName, modulePath) => (
   j.importDeclaration([
     j.importDefaultSpecifier(
-      j.identifier(getModuleName(module, binding))
+      j.identifier(moduleName)
     )],
-    j.literal(getModulePath(module, dotPath))
+    j.literal(modulePath)
+  )
+);
+
+const buildImport = (j, moduleName, modulePath) => (
+  j.importDeclaration(
+    [
+      j.importSpecifier(
+        j.identifier(moduleName)
+      )
+    ],
+    j.literal(modulePath)
   )
 );
 
@@ -46,7 +93,14 @@ const transformImport = (j, item, match) => {
   const binding = _.get(match, 'captures.binding[0]');
   const dotPath = _.get(match, 'captures.dotPath[0]');
 
-  return j(item).replaceWith(buildImport(j, module, binding, dotPath));
+  const moduleName = getModuleName(module, binding);
+  const modulePath = getModulePath(module, dotPath);
+
+  detectNamingCollision(j, item, moduleName);
+  replaceBreadCrumbVariables(j, item, module.split('.'), moduleName);
+
+  const importNode = buildDefaultImport(j, moduleName, modulePath);
+  return j(item).replaceWith(importNode);
 };
 
 const importPatterns = {
@@ -54,6 +108,7 @@ const importPatterns = {
     re: named(new RegExp(`^import ${modulePathRegex}$`, 'm')),
     transform: transformImport
   },
+
   multiple: {
     re: named(new RegExp(`^import ${multipleModulesRegex}$`, 'm')),
     transform: (j, item, match) => {
@@ -65,37 +120,41 @@ const importPatterns = {
         const binding = _.get(subMatch, 'captures.binding[0]');
         const dotPath = _.get(subMatch, 'captures.dotPath[0]');
 
+        const moduleName = getModuleName(module, binding);
+        const modulePath = getModulePath(module, dotPath);
+
+        detectNamingCollision(j, item, moduleName);
+        replaceBreadCrumbVariables(j, item, module.split('.'), moduleName);
+
         parentStatement.insertAfter(
-          buildImport(j, module, binding, dotPath)
+          buildDefaultImport(j, moduleName, modulePath)
         );
       })
       j(item).remove();
     }
   },
+
   binding: {
     re: named(new RegExp('^import ' + modulePathRegex + ' as ' + impName('binding') + '$', 'm')),
     transform: transformImport
   },
+
   from: {
     re: named(new RegExp('^from ' + modulePathRegex + ' import ' + impName('selection') + '$', 'm')),
     transform: (j, item, match) => {
       const module = _.get(match, 'captures.module[0]');
-      const selection = _.get(match, 'captures.selection[0]');
+      const moduleName = _.get(match, 'captures.selection[0]');
       const dotPath = _.get(match, 'captures.dotPath[0]');
+      const modulePath = getModulePath(module, dotPath);
+
+      detectNamingCollision(j, item, moduleName);
 
       j(item).replaceWith(
-        j.importDeclaration(
-          [
-            j.importSpecifier(
-              j.identifier(selection),
-              j.identifier(selection)
-            )
-          ],
-          j.literal(getModulePath(module, dotPath))
-        )
+        buildImport(j, moduleName, modulePath)
       )
     }
   },
+
   bindingFrom: {
     re: named(new RegExp('^from ' + modulePathRegex + ' import ' + impName('selection') + ' as ' + impName('binding') + '$', 'm')),
     transform: (j, item, match) => {}

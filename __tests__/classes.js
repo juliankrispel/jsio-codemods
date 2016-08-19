@@ -42,5 +42,6 @@ describe('classes transform', () => {
 
   defineTest('classes/normal', 'classes');
   defineTest('classes/extend', 'classes');
+  defineTest('classes/super', 'classes');
 });
 

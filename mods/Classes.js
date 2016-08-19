@@ -1,7 +1,46 @@
 'use strict';
-const transformSuperCalls = (j, node) => {
-  // to be implemented
-  console.log(node);
+const transformSuperCalls = (j, node, name) => {
+  // We only replace the super method calls if the Class
+  // function has an argument
+  if (name) {
+    // otherwise, we return
+    j(node).find(j.CallExpression, { callee: { name } })
+    .map(path => {
+      const args = path.value.arguments;
+      const methodName = args[1].value;
+      const appliedArgs = _.get(args, '[2].elements', []);
+
+      if (args[0].type !== 'ThisExpression') {
+        throw new Error('not allowed:\n' +
+                        'you called super with something other than' +
+                        'the `this` value')
+      }
+
+
+      if (typeof methodName !== 'string') {
+        throw new Error('not allowed:\n' +
+                       'method name can only be a string');
+      }
+
+      let superIdentifier = j.identifier('super');
+      if (methodName !== 'init') {
+        superIdentifier = j.memberExpression(
+          superIdentifier,
+          j.identifier(methodName)
+        )
+      }
+
+
+      j(path).replaceWith(
+        j.callExpression(
+          superIdentifier,
+          appliedArgs
+        )
+      );
+    });
+  }
+
+  return node;
 };
 
 const _ = require('lodash');
@@ -17,6 +56,7 @@ const getSuperClass = (j, path) => {
 const extractClassBody = (j, path) => {
   const classFunctions = path.value.arguments.filter(node => node.type === 'FunctionExpression');
   const classFunction = classFunctions[0];
+  const superMethodName = _.get(classFunction, 'params[0].name');
 
   return classFunction.body.body.filter(node => (
     _.get(node, 'expression.type') === 'AssignmentExpression' ||
@@ -33,7 +73,7 @@ const extractClassBody = (j, path) => {
     return j.methodDefinition(
       methodType,
       j.identifier(methodName),
-      node.right
+      transformSuperCalls(j, node.right, superMethodName)
     );
   });
 };

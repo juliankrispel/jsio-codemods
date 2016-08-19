@@ -4,7 +4,7 @@
   "description": "",
   "main": "",
   "scripts": {
-    "lint": "eslint mods/**/*.js",
+    "lint": "eslint mods __tests__",
     "test": "jest --verbose",
     "test:watch": "jest --watch=all --verbose"
   },
@@ -27,5 +27,8 @@
   },
   "eslintConfig": {
     "extends": "jsio"
+  },
+  "dependencies": {
+    "lodash": "^4.15.0"
   }
 }

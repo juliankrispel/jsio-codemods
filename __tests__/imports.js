@@ -1,3 +1,4 @@
+/* eslint-env jest */
 'use strict';
 jest.autoMockOff();
 const testUtils = require('../testUtils');

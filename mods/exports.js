@@ -61,7 +61,7 @@ const transformDefaultExports = (j, ast) => {
 const transformNamedExports = (j, ast) => {
   // get an assignment expression with exports on the left
   ast
-  .find(j.AssignmentExpression, { left: { object: { name: 'exports' }}})
+  .find(j.AssignmentExpression, { left: { object: { name: 'exports' } } })
   .forEach(path => {
     // if path is part of an assignment expression
     const parent = path.parent.value;

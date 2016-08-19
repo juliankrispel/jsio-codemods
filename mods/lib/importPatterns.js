@@ -124,7 +124,7 @@ const importPatterns = {
   multiple: {
     re: named(new RegExp(`^import ${multipleModulesRegex}$`, 'm')),
     transform: (j, item, match) => {
-      const modules =  match.captures.modules[0].split(',').map(item => item.trim());
+      const modules = match.captures.modules[0].split(',').map(item => item.trim());
       const parentStatement = j(item).closest(j.ExpressionStatement);
       modules.reverse().forEach(mod => {
         const subMatch = singleModulesRegex.exec(mod);

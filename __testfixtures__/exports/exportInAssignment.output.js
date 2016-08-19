@@ -1,4 +1,7 @@
-Alpha = function() { console.log('boom'); }
+Alpha = function () {
+  console.log('boom');
+};
 export default Alpha;
+
 Beta = yoyoyo;
-export const boing = Beta;
+exports.default.boing = Beta;

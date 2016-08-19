@@ -42,6 +42,13 @@ const transformDefaultExports = (j, ast) => {
       _.get(parent, 'id.name') ||
       _.get(parent, 'left.name');
     moveDefaultExport(j, defaultExport, exportName);
+
+  // If exports is the leftmost side in a multiple assignment
+  // statement
+  } else if (_.get(defaultExport, 'value.right.type') === 'AssignmentExpression') {
+    const moduleReference = _.get(defaultExport, 'value.right.left.name');
+
+    moveDefaultExport(j, defaultExport, moduleReference);
   } else {
     // for simple assignments which are all other than above
     // simply replace the assignment with the export

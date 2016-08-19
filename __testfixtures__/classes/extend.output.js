@@ -1,5 +1,9 @@
-class MyClass {
+class MyClass extends PubSub {
   constructor () {
-    this.__class__ = 'MyClass';
+    super();
+  }
+
+  myFunction(arg1, arg2) {
+    super.myFunction(arg1, arg2);
   }
 }

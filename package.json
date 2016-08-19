@@ -29,6 +29,7 @@
     "extends": "jsio"
   },
   "dependencies": {
+    "colors": "^1.1.2",
     "lodash": "^4.15.0"
   }
 }

@@ -1,9 +1,29 @@
 'use strict';
+const transformSuperCalls = (j, node) => {
+  // to be implemented
+  console.log(node);
+};
 
 const _ = require('lodash');
-const extractClassBody = (j, path) => (
-  j(path).find(j.AssignmentExpression, { left: { object: j.ThisExpression } }).paths().map(path => {
-    let methodName = path.value.left.property.name;
+
+const getSuperClass = (j, path) => {
+  const superClass = path.value.arguments[0];
+  if (superClass.type === 'Identifier') {
+    return superClass;
+  }
+  return null;
+};
+
+const extractClassBody = (j, path) => {
+  const classFunctions = path.value.arguments.filter(node => node.type === 'FunctionExpression');
+  const classFunction = classFunctions[0];
+
+  return classFunction.body.body.filter(node => (
+    _.get(node, 'expression.type') === 'AssignmentExpression' ||
+    _.get(node, 'expression.left.object.type') === 'ThisExpression'
+  )).map(_node => {
+    const node = _.get(_node, 'expression');
+    let methodName = node.left.property.name;
     let methodType = 'method';
 
     if (methodName === 'init') {
@@ -13,19 +33,38 @@ const extractClassBody = (j, path) => (
     return j.methodDefinition(
       methodType,
       j.identifier(methodName),
-      path.value.right
-    )
-  })
-);
+      node.right
+    );
+  });
+};
 
 const detectInvalidClassDefinition = (path) => {
-  const firstArg = _.get(path, 'value.arguments[0]');
-  if (!firstArg ||
-      firstArg.type !== 'FunctionExpression') {
-    throw new Error("invalid jsio class definition, Class(...) does not contain a function as it's first argument. Please fix and continue");
+  const args = path.value.arguments;
+  const classFunctions = path.value.arguments.filter(node => node.type === 'FunctionExpression');
+  const classFunction = classFunctions[0];
+
+  if (classFunctions.length === 0) {
+    throw new Error('Invalid jsio class definition,\n' +
+                    ', Class(...) does not contain a function as an argument.' +
+                    'Please fix and continue');
   }
 
-  firstArg.body.body.forEach(_node => {
+  if (classFunctions.length > 1) {
+    throw new Error('invalid jsio class definition, multiple class functions\n' +
+                   'are not allowed.');
+  }
+
+  if (args.length > 1 && args[0].type !== 'Identifier') {
+    throw new Error('Super class is not a variable and therefore not allowed.\n' +
+                    'Please fix and continue');
+  }
+
+  if (args.length > 2) {
+    throw new Error('You can only pass 2 arguments to `Super`.\n' +
+                    'Please fix and continue');
+  }
+
+  classFunction.body.body.forEach(_node => {
     const node = _node.expression;
     if (node.type !== 'AssignmentExpression' ||
        node.left.object.type !== 'ThisExpression') {
@@ -57,7 +96,8 @@ module.exports = (fileInfo, api, options) => {
       j(path.parent.parent).replaceWith(
         j.classDeclaration(
           j.identifier(className),
-          j.classBody(classBody)
+          j.classBody(classBody),
+          getSuperClass(j, path)
         )
       )
     } else {

@@ -1,1 +1,2 @@
-import {hideAddressBar as hab} from 'device';
+import device from 'device';
+var { hab } = device;

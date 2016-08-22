@@ -1,5 +1,6 @@
 const named = require('named-regexp').named;
 const _ = require('lodash');
+const error = require('./error');
 
 // Prime jsio with some common paths
 // jsio.addPath('./timestep/src');
@@ -37,7 +38,7 @@ const detectNamingCollision = (j, node, name) => {
     .nodes()
     .length > 0
   ) {
-    throw new Error(`The module with name '${name} collides with another variable in this file, please rename the file and try again`);
+    error(node.value.arguments[0], `The module with name '${name} collides with another variable in this file, please rename the file and try again`);
   }
 }
 

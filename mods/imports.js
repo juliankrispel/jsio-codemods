@@ -1,6 +1,7 @@
 'use strict';
 const _ = require('lodash');
 const importPatterns = require('./lib/importPatterns');
+const error = require('./lib/error');
 
 // Stolen from: https://github.com/gameclosure/js.io/blob/bf8cdfa2c19fd610b179ce47ca7101f36988c7e9/packages/preprocessors/import.js //
 var importExpr = /^(\s*)(import\s+[^=+*"'\r\n;\/]+|from\s+[^=+"'\r\n;\/ ]+\s+import\s+[^=+"'\r\n;\/]+)(;|\/|$)/gm;
@@ -17,26 +18,26 @@ const transformImport = (j, item) => {
     !item.parent.parent ||
     item.parent.parent.name !== 'program'
   ) {
-    throw new Error('Imports must be top level', item.parent.parent.type);
+    error(item.value.arguments[0], 'Imports must be top level');
   }
 
   if (item.value.arguments.length !== 1) {
-    throw new Error('Arguments length is not 1', item.value.arguments.length);
+    error(item.value.arguments[0], 'Arguments length is not 1');
   }
 
   const argumentNode = item.value.arguments[0];
   if (argumentNode.type !== 'Literal') {
-    throw new Error('Argument type not Literal', argumentNode.type);
+    error(item.value.arguments[0], 'Argument type not Literal');
   }
 
   const importString = argumentNode.value;
 
   if (importString.indexOf('*') > -1) {
-    throw new Error('Wildcard imports are not allowed, please refactor this file before continuing.');
+    error(item.value.arguments[0], 'Wildcard imports are not allowed, please refactor this file before continuing.');
   }
 
   if (importString.indexOf('as exports') > -1) {
-    throw new Error("The syntax 'import <your-module> as export' is not allowed, please refactor this file before continuing.");
+    error(item.value.arguments[0], "The syntax 'import <your-module> as export' is not allowed, please refactor this file before continuing.");
   }
 
   let match;
@@ -45,7 +46,7 @@ const transformImport = (j, item) => {
     const newMatch = pattern.re.exec(importString);
     if (newMatch) {
       if (match) {
-        throw new Error('Ambiguous import match');
+        error(item.value.arguments[0], 'Ambiguous import match');
       }
       match = newMatch;
       importPattern = pattern;
@@ -53,7 +54,7 @@ const transformImport = (j, item) => {
   });
 
   if (!match) {
-    throw new Error('Could not match import signature');
+    error(item.value.arguments[0], 'Could not match import signature');
   }
 
   return importPattern.transform(j, item, match);
@@ -63,6 +64,8 @@ const toSourceOpts = { quote: 'single' };
 
 module.exports = (fileInfo, api, options) => {
   const j = api.jscodeshift;
+  error.fileName = fileInfo.path;
+
   // Transform source so that the AST can be built
   fileInfo.source = fileInfo.source.replace(importExpr, replaceFn);
   const shifted = j(fileInfo.source);

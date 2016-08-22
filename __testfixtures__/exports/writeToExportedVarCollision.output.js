@@ -1,6 +1,8 @@
+var exports = {};
 exports.now = 0;
 
-export const tick = function (dt) {
-  const now = +new Date();
+exports.tick = function (dt) {
+  var now = +new Date();
   exports.now = now;
 };
+export default exports;

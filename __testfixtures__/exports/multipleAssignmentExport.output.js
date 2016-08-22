@@ -1,4 +1,5 @@
+var exports;
 var boing;
 
-boing = function() {};
-export default boing;
+exports = boing = function() {};
+export default exports;

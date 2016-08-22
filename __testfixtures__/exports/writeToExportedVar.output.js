@@ -1,10 +1,12 @@
-export let now = 0;
-export let frames = 0;
+var exports = {};
+exports.now = 0;
+exports.frames = 0;
 
-export const tick = function (dt) {
-  now += dt;
-  frames++;
-  onTick(dt);
+exports.tick = function (dt) {
+  exports.now += dt;
+  exports.frames++;
+  exports.onTick(dt);
 };
 
-export const onTick = function (dt) {};
+exports.onTick = function (dt) {};
+export default exports;

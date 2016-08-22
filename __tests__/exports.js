@@ -11,6 +11,7 @@ describe('Exports Transform', () => {
   defineTest('exports/normal', 'exports');
   defineTest('exports/normalNamed', 'exports');
   defineTest('exports/mixed', 'exports');
+  defineTest('exports/noExports', 'exports');
   defineTest('exports/multipleAssignmentExport', 'exports');
   defineTest('exports/multipleDefaultExports', 'exports');
   defineTest('exports/nestedNamedAssignment', 'exports');

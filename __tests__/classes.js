@@ -19,6 +19,11 @@ describe('classes transform', () => {
     defineTestWhichThrows('classes/classScopedVars', classesTransform);
   });
 
+  describe('when class contains local variable', () => {
+    defineTestWhichThrows('classes/multipleInheritance', classesTransform);
+  });
+
+
   describe('when class contains local operation', () => {
   });
 
@@ -43,5 +48,7 @@ describe('classes transform', () => {
   defineTest('classes/normal', 'classes');
   defineTest('classes/extend', 'classes');
   defineTest('classes/super', 'classes');
+  defineTest('classes/namedClasses', 'classes');
+  defineTest('classes/defineProperty', 'classes');
 });
 

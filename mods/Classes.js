@@ -8,7 +8,13 @@ const transformSuperCalls = (j, node, name) => {
     .map(path => {
       const args = path.value.arguments;
       const methodName = args[1].value;
-      const appliedArgs = _.get(args, '[2].elements', []);
+      let appliedArgs = _.get(args, '[2]');
+
+      if (appliedArgs && appliedArgs.type === 'ArrayExpression') {
+        appliedArgs = appliedArgs.elements;
+      } else {
+        appliedArgs = appliedArgs ? [j.spreadElement(appliedArgs)] : [];
+      }
 
       if (args[0].type !== 'ThisExpression') {
         throw new Error('not allowed:\n' +
@@ -45,37 +51,87 @@ const transformSuperCalls = (j, node, name) => {
 
 const _ = require('lodash');
 
-const getSuperClass = (j, path) => {
-  const superClass = path.value.arguments[0];
-  if (superClass.type === 'Identifier') {
-    return superClass;
+const extractMethod = (j, node, superMethodName) => {
+  let methodName = node.left.property.name;
+  let methodType = 'method';
+
+  if (methodName === 'init') {
+    methodType = methodName = 'constructor';
   }
-  return null;
-};
+
+  return j.methodDefinition(
+    methodType,
+    j.identifier(methodName),
+    transformSuperCalls(j, node.right, superMethodName)
+  );
+}
+
+const extractDefineProperty = (j, node, superMethodName) => {
+  const methodName = node.arguments[1].value;
+  return node.arguments[2].properties.map(prop => {
+    return j.methodDefinition(
+      prop.key.name,
+      j.identifier(methodName),
+      transformSuperCalls(j, prop.value, superMethodName)
+    )
+  });
+}
 
 const extractClassBody = (j, path) => {
   const classFunctions = path.value.arguments.filter(node => node.type === 'FunctionExpression');
   const classFunction = classFunctions[0];
   const superMethodName = _.get(classFunction, 'params[0].name');
 
-  return classFunction.body.body.filter(node => (
-    _.get(node, 'expression.type') === 'AssignmentExpression' ||
-    _.get(node, 'expression.left.object.type') === 'ThisExpression'
-  )).map(_node => {
-    const node = _.get(_node, 'expression');
-    let methodName = node.left.property.name;
-    let methodType = 'method';
-
-    if (methodName === 'init') {
-      methodType = methodName = 'constructor';
+  return _.flatten(classFunction.body.body.map(node => _.get(node, 'expression')).filter(node => (
+    (
+      _.get(node, 'type') === 'CallExpression' &&
+      _.get(node, 'callee.object.name') === 'Object' &&
+      _.get(node, 'callee.property.name') === 'defineProperty'
+    ) || (
+      _.get(node, 'type') === 'AssignmentExpression' &&
+      _.get(node, 'left.object.type') === 'ThisExpression')
+    )
+  ).map(node => {
+    if (node.type === 'AssignmentExpression') {
+      return extractMethod(j, node, superMethodName);
     }
+    return extractDefineProperty(j, node, superMethodName);
+  }));
+};
 
-    return j.methodDefinition(
-      methodType,
-      j.identifier(methodName),
-      transformSuperCalls(j, node.right, superMethodName)
-    );
+const getSuperClass = (args) => {
+  let superClass = null;
+
+  args.forEach(arg => {
+    if (arg.type === 'ArrayExpression' && arg.type !== 'FunctionExpression') {
+      superClass = getSuperClass(arg.elements);
+    } else if (arg.type !== 'Literal' && arg.type !== 'FunctionExpression'){
+      if (superClass) {
+        throw new Error('not allowed:' +
+                        'es6 does not allow multiple inheritance\n' +
+                        'please fix and continue');
+      }
+
+      superClass = arg;
+    }
   });
+  return superClass;
+}
+
+const getClassName = (args) => {
+  let className;
+  args.forEach(arg => {
+    if (clasName) {
+      throw new Error('not allowed:\n' +
+                      `class name defined more than once, first name is ${className}`);
+    }
+    if (arg.type === 'Literal') {
+      className = arg.value;
+    } else if (arg.type === 'ArrayExpression') {
+      className = getClassName(arg.elements);
+    }
+  });
+  return className;
 };
 
 const detectInvalidClassDefinition = (path) => {
@@ -90,27 +146,36 @@ const detectInvalidClassDefinition = (path) => {
   }
 
   if (classFunctions.length > 1) {
-    throw new Error('invalid jsio class definition, multiple class functions\n' +
+    throw new Error('not allowed:\n' +
+                    'invalid jsio class definition, multiple class functions\n' +
                    'are not allowed.');
   }
 
-  if (args.length > 1 && args[0].type !== 'Identifier') {
-    throw new Error('Super class is not a variable and therefore not allowed.\n' +
-                    'Please fix and continue');
-  }
-
   if (args.length > 2) {
-    throw new Error('You can only pass 2 arguments to `Super`.\n' +
+    throw new Error('not allowed:\n' +
+                    'You can only pass 2 arguments to `Class`.\n' +
                     'Please fix and continue');
   }
 
   classFunction.body.body.forEach(_node => {
     const node = _node.expression;
-    if (node.type !== 'AssignmentExpression' ||
-       node.left.object.type !== 'ThisExpression') {
+    if ((
+          node.type !== 'AssignmentExpression' ||
+          node.left.object.type !== 'ThisExpression'
+        ) && (
+          node.type !== 'CallExpression' ||
+          _.get(node, 'callee.object.name') !== 'Object' ||
+          _.get(node, 'callee.property.name') !== 'defineProperty'
+        )) {
       throw new Error(`error on line ${node.loc.start.line}\n` +
-                      'Only `this` assignments are allowed in class definitions. like so\n' +
-                      'this.fooMethod = function() {...}'
+                      'Only the following operations are allowed in class definitions:\n' +
+                      '---- this.fooMethod = function() {...}\n' +
+                      '\n' +
+                      'and use of Object.defineProperty\n' +
+                      `--- Object.defineProperty(this, 'state', {\n` +
+                      '---   get: function() {... },' +
+                      '---   set: function() {... }' +
+                      '--- })'
                      );
     }
   });
@@ -137,7 +202,7 @@ module.exports = (fileInfo, api, options) => {
         j.classDeclaration(
           j.identifier(className),
           j.classBody(classBody),
-          getSuperClass(j, path)
+          getSuperClass(path.value.arguments)
         )
       )
     } else {

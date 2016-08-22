@@ -59,28 +59,24 @@ module.exports = (fileInfo, api, options) => {
         )]
       )
     );
-  } else if (_.get(firstExport, 'value.left.name') === 'exports'){
-    firstExport.closest(j.Statement).insertBefore(
-      j.expressionStatement(
-        j.variableDeclaration(
-          'var',
-          [j.variableDeclarator(
-            firstExport.value.left,
-            null
-          )]
-        )
+  } else if (_.get(firstExport, 'value.left.name') === 'exports') {
+    j(firstExport).closest(j.Statement).insertBefore(
+      j.variableDeclaration(
+        'var',
+        [j.variableDeclarator(
+          j.identifier('exports'),
+          null
+        )]
       )
     )
   } else {
-    firstExport.closest(j.Statement).insertBefore(
-      j.expressionStatement(
-        j.variableDeclaration(
-          'var',
-          [j.variableDeclarator(
-            firstExport.value.left,
-            []
-          )]
-        )
+    j(firstExport).closest(j.Statement).insertBefore(
+      j.variableDeclaration(
+        'var',
+        [j.variableDeclarator(
+          j.identifier('exports'),
+          j.objectExpression([])
+        )]
       )
     )
   }
@@ -92,6 +88,6 @@ module.exports = (fileInfo, api, options) => {
         j.identifier('exports')
       )
     );
-  
-  return ast.toSource({ quote: 'single' }).replace(/;+/, ';');
+
+  return ast.toSource({ quote: 'single' }).replace(/;+/gi, ';');
 };

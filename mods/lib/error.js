@@ -1,23 +1,52 @@
-"use strict";
+'use strict';
 const jsc = require('jscodeshift');
 const colors = require('colors');
 
-const throwError = (node, message) => {
-  const line = node.loc.start.line;
-  let errorMessage =
-    `Syntax not allowed on ${colors.white('line ' + line)}:\n` +
-    `\n` +
-    `  ${colors.white(jsc(node).toSource())}\n` +
-    `\n` +
-    `^^^^^ ${colors.red(message)}`
-  if (module.exports.fileName) {
-    errorMessage = `\n> ${module.exports.fileName}\n` + errorMessage;
+
+/**
+ * @param  {Object} opts
+ * @param  {Node} node
+ * @param  {String} message
+ * @param  {String} [filePath]
+ * @param  {Function} [colorMessage]
+ * @return {String}
+ */
+const buildMessage = opts => {
+  opts.colorMessage = opts.colorMessage || colors.red;
+
+  const nodeStart = opts.node.loc.start;
+  const locString = `${nodeStart.line}:${nodeStart.column}`;
+  // TODO: get filePath from node... I couldnt find a nice way of doing this
+  // with the jsc APIs
+
+  let errorLocation;
+  if (opts.filePath) {
+    errorLocation = `${opts.filePath}:${locString}`;
   } else {
-    errorMessage = '\n' + errorMessage;
+    errorLocation = `Line ${locString}`;
   }
 
-  throw new Error(errorMessage);
-}
+  return `${opts.colorMessage(opts.message)}\n` +
+    `At: ${errorLocation}\n` +
+    `\n` +
+    `  ${colors.white(jsc(opts.node).toSource())}\n`;
+};
 
-module.exports = throwError;
-module.exports.fileName = null;;
+
+const error = opts => {
+  opts.colorMessage = colors.red;
+  throw new Error(buildMessage(opts));
+};
+
+
+const warn = opts => {
+  opts.colorMessage = colors.yellow;
+  console.warn('Warning: ', buildMessage(opts));
+};
+
+
+module.exports = {
+  buildMessage: buildMessage,
+  error: error,
+  warn: warn
+};

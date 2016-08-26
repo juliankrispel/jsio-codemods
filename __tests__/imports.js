@@ -31,6 +31,10 @@ describe('Imports Transform', () => {
     defineTestWhichThrows('imports/simpleCollision');
   });
 
+  describe('when from import collides with another variable', () => {
+    defineTestWhichThrows('imports/bindingFromCollision');
+  });
+
   defineTest('imports/binding');
   defineTest('imports/member');
   defineTest('imports/multipleInline');

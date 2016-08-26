@@ -1,1 +1,5 @@
-import {hideAddressBar as hab} from 'device';
+import device from 'device';
+
+const {
+  hideAddressBar: hab
+} = device;

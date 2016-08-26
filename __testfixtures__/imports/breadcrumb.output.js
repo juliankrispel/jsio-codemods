@@ -9,3 +9,5 @@ exports.something = BackingExtension;
 var uiKeyboardTypes = {};
 import keyboardTypes from '../../ui/keyboardTypes';
 console.log(keyboardTypes);
+
+const boom = new PubSub();

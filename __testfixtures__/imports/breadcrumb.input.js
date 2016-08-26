@@ -9,3 +9,5 @@ exports.something = layout.BackingExtension;
 var uiKeyboardTypes = {};
 import ...ui.keyboardTypes;
 console.log(ui.keyboardTypes);
+
+const boom = new lib.PubSub();

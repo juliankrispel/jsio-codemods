@@ -1,8 +1,8 @@
-var exports = {};
-exports.now = 0;
+var defaultExports = {};
+defaultExports.now = 0;
 
-exports.tick = function (dt) {
+defaultExports.tick = function (dt) {
   var now = +new Date();
-  exports.now = now;
+  defaultExports.now = now;
 };
-export default exports;
+export default defaultExports;

@@ -1,2 +1,2 @@
-var exports = {};
-export default exports;
+var defaultExports = {};
+export default defaultExports;

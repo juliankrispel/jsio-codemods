@@ -1,12 +1,12 @@
-var exports = {};
-exports.now = 0;
-exports.frames = 0;
+var defaultExports = {};
+defaultExports.now = 0;
+defaultExports.frames = 0;
 
-exports.tick = function (dt) {
-  exports.now += dt;
-  exports.frames++;
-  exports.onTick(dt);
+defaultExports.tick = function (dt) {
+  defaultExports.now += dt;
+  defaultExports.frames++;
+  defaultExports.onTick(dt);
 };
 
-exports.onTick = function (dt) {};
-export default exports;
+defaultExports.onTick = function (dt) {};
+export default defaultExports;

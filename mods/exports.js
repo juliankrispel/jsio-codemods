@@ -50,6 +50,7 @@ module.exports = (fileInfo, api, options) => {
     firstExport.parent.value.type === 'ExpressionStatement' &&
     _.get(firstExport, 'value.left.name') === 'exports'
   ) {
+    firstExport.value.left.name = 'defaultExports';
     j(firstExport).replaceWith(
       j.variableDeclaration(
         'var',
@@ -64,7 +65,7 @@ module.exports = (fileInfo, api, options) => {
       j.variableDeclaration(
         'var',
         [j.variableDeclarator(
-          j.identifier('exports'),
+          j.identifier('defaultExports'),
           null
         )]
       )
@@ -74,7 +75,7 @@ module.exports = (fileInfo, api, options) => {
       j.variableDeclaration(
         'var',
         [j.variableDeclarator(
-          j.identifier('exports'),
+          j.identifier('defaultExports'),
           j.objectExpression([])
         )]
       )
@@ -85,9 +86,13 @@ module.exports = (fileInfo, api, options) => {
     .closest(j.Statement)
     .insertAfter(
       j.exportDefaultDeclaration(
-        j.identifier('exports')
+        j.identifier('defaultExports')
       )
     );
+
+  ast.find(j.Identifier, { name: 'exports' })
+    .filter(path => isLeftMostInAssignment(path, path))
+    .forEach(path => j(path).replaceWith(j.identifier('defaultExports')));
 
   return ast.toSource({ quote: 'single' }).replace(/;+/gi, ';');
 };

@@ -1,10 +1,10 @@
-var exports = {};
+var defaultExports = {};
 
-exports = function () {};
+defaultExports = function () {};
 
-exports = Class(function() {});
+defaultExports = Class(function() {});
 
-exports = class MyClass {}
+defaultExports = class MyClass {}
 
-exports.foo = 2;
-export default exports;
+defaultExports.foo = 2;
+export default defaultExports;

@@ -1,3 +1,3 @@
-var exports = {};
-exports.boom.boing = {};
-export default exports;
+var defaultExports = {};
+defaultExports.boom.boing = {};
+export default defaultExports;

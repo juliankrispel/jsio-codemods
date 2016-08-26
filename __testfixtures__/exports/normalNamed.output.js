@@ -1,3 +1,3 @@
-var exports = {};
-exports.boom = {};
-export default exports;
+var defaultExports = {};
+defaultExports.boom = {};
+export default defaultExports;

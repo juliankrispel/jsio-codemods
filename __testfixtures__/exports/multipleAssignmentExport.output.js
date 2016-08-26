@@ -1,4 +1,4 @@
 var boing;
 
-boing = function() {};
-export default boing;
+var defaultExports = boing = function() {};
+export default defaultExports;

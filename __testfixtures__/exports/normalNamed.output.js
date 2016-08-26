@@ -1,1 +1,3 @@
-export const boom = {};
+var defaultExports = {};
+defaultExports.boom = {};
+export default defaultExports;

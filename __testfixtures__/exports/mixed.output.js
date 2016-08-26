@@ -1,8 +1,8 @@
 const Hello = function() { };
 
-export default function() {};
+var defaultExports = function() {};
 
-hoof = 1234321;
+defaultExports.a = hoof = 1234321;
 
-export const a = hoof;
-export const b = Hello;
+defaultExports.b = Hello;
+export default defaultExports;

@@ -1,133 +1,98 @@
 'use strict';
 const _ = require('lodash');
 
-const moveDefaultExport = (j, path, exportName) => {
-  j(path).closest(j.Statement)
-  .insertAfter(j.exportDefaultDeclaration(
-    j.identifier(exportName)
-  ));
-  j(path).replaceWith(path.value.right);
-}
-
-const transformDefaultExports = (j, ast) => {
-  // find default exports
-  const defaultExports = ast.find(j.AssignmentExpression, { left: { name: 'exports' } })
-  if (defaultExports.nodes().length > 1) {
-    throw new Error('there is more than one assignment for exports,' +
-                    'this is not allowed, please reduce it to 1' +
-                    'assignment and continue');
+const isLeftMostInAssignment = (path) => {
+  // if the parent is an assignment expression then
+  // we're good
+  if (path.parent.value.type === 'AssignmentExpression') {
+    return true;
   }
 
-
-  const defaultExport = defaultExports.paths()[0];
-
-  // cancel transform if there is no default export
-  if (!defaultExport) {
-    return false;
+  // if parent is a member assignment we recurse this function
+  // with the parent
+  if (_.get(path, 'parent.value.object') === path.value) {
+    return isLeftMostInAssignment(path.parent);
   }
 
-  // if the export is part of an variable assignment
-  //
-  //   var Alpha = export = ...
-  //
-  // or part of an assignment expression like
-  //
-  //   Alpha = export = ...
-  //
-  // extract it and insert an import statement after
-  const parent = defaultExport.parent.value;
-  if (parent.type === 'VariableDeclarator' ||
-     parent.type === 'AssignmentExpression') {
-    const exportName =
-      _.get(parent, 'id.name') ||
-      _.get(parent, 'left.name');
-    moveDefaultExport(j, defaultExport, exportName);
-
-  // If exports is the leftmost side in a multiple assignment
-  // statement
-  } else if (_.get(defaultExport, 'value.right.type') === 'AssignmentExpression') {
-    const moduleReference = _.get(defaultExport, 'value.right.left.name');
-
-    moveDefaultExport(j, defaultExport, moduleReference);
-  } else {
-    // for simple assignments which are all other than above
-    // simply replace the assignment with the export
-    // like this:
-    //
-    //   exports = ...
-    //
-    // declaration
-    j(defaultExport).closest(j.Statement).replaceWith(
-      j.exportDefaultDeclaration(
-        defaultExport.value.right
-      )
-    )
-  }
-}
-
-const transformNamedExports = (j, ast) => {
-  // get an assignment expression with exports on the left
-  ast
-  .find(j.AssignmentExpression, { left: { object: { name: 'exports' } } })
-  .forEach(path => {
-    // if path is part of an assignment expression
-    const parent = path.parent.value;
-    const exportName = path.value.left.property.name;
-
-    if (parent.type === 'VariableDeclarator' ||
-        parent.type === 'AssignmentExpression') {
-      const moduleReference =
-        _.get(parent, 'id.name') ||
-        _.get(parent, 'left.name');
-
-      j(path).closest(j.Statement)
-      .insertAfter(j.exportNamedDeclaration(
-        j.variableDeclaration('const', [
-          j.variableDeclarator(
-            j.identifier(exportName),
-            j.identifier(moduleReference)
-          )
-        ])
-      , []));
-
-      j(path).replaceWith(path.value.right);
-    } else if (path.value.right.type === 'AssignmentExpression') {
-      const moduleReference = _.get(path, 'value.right.left.name');
-
-      j(path).closest(j.Statement)
-      .insertAfter(j.exportNamedDeclaration(
-        j.variableDeclaration('const', [
-          j.variableDeclarator(
-            j.identifier(exportName),
-            j.identifier(moduleReference)
-          )
-        ])
-      , []));
-
-      j(path).replaceWith(path.value.right);
-    } else {
-      j(path).closest(j.Statement).replaceWith(
-        j.exportNamedDeclaration(
-          j.variableDeclaration('const', [
-            j.variableDeclarator(
-              j.identifier(exportName),
-              path.value.right
-            )
-          ])
-        , [])
-      )
-    }
-  });
+  return false;
 };
+
+const getParentAssignment = (path) => {
+  if (_.get(path, 'parent.value.type') === 'AssignmentExpression') {
+    return path.parent;
+  }
+  return getParentAssignment(path.parent);
+};
+
+const getAllExports = (j, ast) =>
+  ast.find(j.Identifier, { name: 'exports' })
+  .filter(path => isLeftMostInAssignment(path, path))
+  .map(getParentAssignment);
 
 module.exports = (fileInfo, api, options) => {
   const j = api.jscodeshift;
 
   // Transform source so that the AST can be built
   const ast = j(fileInfo.source);
+  const exports = getAllExports(j, ast);
 
-  transformDefaultExports(j, ast);
-  transformNamedExports(j, ast);
+  // bail out early if there are no exports at all
+  if (exports.paths().length < 1) {
+    return fileInfo.source;
+  };
 
-  return ast.toSource({ quote: 'single' });
+  // get first export
+  const firstExport = exports.paths()[0];
+
+  // if first export is an assignment that can be turned into a
+  // variable declaration, do it.
+  if (
+    firstExport.parent.value.type === 'ExpressionStatement' &&
+    _.get(firstExport, 'value.left.name') === 'exports'
+  ) {
+    firstExport.value.left.name = 'defaultExports';
+    j(firstExport).replaceWith(
+      j.variableDeclaration(
+        'var',
+        [j.variableDeclarator(
+          firstExport.value.left,
+          firstExport.value.right
+        )]
+      )
+    );
+  } else if (_.get(firstExport, 'value.left.name') === 'exports') {
+    j(firstExport).closest(j.Statement).insertBefore(
+      j.variableDeclaration(
+        'var',
+        [j.variableDeclarator(
+          j.identifier('defaultExports'),
+          null
+        )]
+      )
+    )
+  } else {
+    j(firstExport).closest(j.Statement).insertBefore(
+      j.variableDeclaration(
+        'var',
+        [j.variableDeclarator(
+          j.identifier('defaultExports'),
+          j.objectExpression([])
+        )]
+      )
+    )
+  }
+
+  j(exports.paths()[exports.paths().length - 1])
+    .closest(j.Statement)
+    .insertAfter(
+      j.exportDefaultDeclaration(
+        j.identifier('defaultExports')
+      )
+    );
+
+  ast.find(j.Identifier, { name: 'exports' })
+    .filter(path => isLeftMostInAssignment(path, path))
+    .forEach(path => j(path).replaceWith(j.identifier('defaultExports')));
+
+  return ast.toSource({ quote: 'single' }).replace(/;+/gi, ';');
 };

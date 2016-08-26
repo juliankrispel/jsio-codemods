@@ -176,11 +176,29 @@ const importPatterns = {
       const dotPath = _.get(match, 'captures.dotPath[0]');
       const modulePath = getModulePath(module, dotPath);
 
+      detectNamingCollision(j, item, module);
       detectNamingCollision(j, item, moduleName);
+      detectNamingCollision(j, item, alias);
 
       j(item).replaceWith(
-        buildAliasImport(j, moduleName, modulePath, alias)
-      )
+        buildDefaultImport(j, module, modulePath)
+      );
+
+      j(item).closest(j.Statement).insertAfter(
+        j.variableDeclaration(
+          'const',
+          [j.variableDeclarator(
+            j.objectPattern([
+              j.property(
+                'init',
+                j.identifier(moduleName),
+                j.identifier(alias)
+              )
+            ]),
+            j.identifier(module)
+          )]
+        )
+      );
     }
   }
 };

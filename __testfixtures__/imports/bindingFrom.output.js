@@ -1,2 +1,5 @@
 import device from 'device';
-var { hab } = device;
+
+const {
+  hideAddressBar: hab
+} = device;
